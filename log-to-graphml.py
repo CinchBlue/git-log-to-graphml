@@ -15,7 +15,7 @@ keyd0 = ET.Element('key')
 keyd0.set('id', 'd0')
 keyd0.set('for', 'node')
 keyd0.set('attr.name', 'actor_type')
-keyd0.set('attr.type', 'integer')
+keyd0.set('attr.type', 'int')
 
 # Enum-like class for the actor_type attribute
 class NodeActorType():
@@ -35,7 +35,7 @@ keyd2 = ET.Element('key')
 keyd2.set('id', 'd2')
 keyd2.set('for', 'node')
 keyd2.set('attr.name', 'name')
-keyd1.set('attr.type', 'string')
+keyd2.set('attr.type', 'string')
 
 # Put the attribute subtrees on the XML element tree
 root.append(keyd0)
