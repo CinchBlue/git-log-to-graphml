@@ -88,7 +88,7 @@ def insert_contributor_node(data):
 
     # Build the XML tree
     node = ET.Element('node')
-    node.set('id', str(generate_node_id()))
+    node.set('id', 'n' + str(generate_node_id()))
     # Fill out the actor_type attribute
     datad0 = ET.SubElement(node, 'data')
     datad0.set('key', 'd0')
