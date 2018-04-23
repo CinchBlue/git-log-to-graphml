@@ -35,6 +35,7 @@ keyd2 = ET.Element('key')
 keyd2.set('id', 'd2')
 keyd2.set('for', 'node')
 keyd2.set('attr.name', 'name')
+keyd1.set('attr.type', 'string')
 
 # Put the attribute subtrees on the XML element tree
 root.append(keyd0)
@@ -85,9 +86,12 @@ def insert_contributor_node(data):
     email = data[0]
     username = data[1]
 
+    # Generate the contributor id
+    node_id = 'n' + str(generate_node_id())
+
     # Build the XML tree
     node = ET.Element('node')
-    node.set('id', 'n' + str(generate_node_id()))
+    node.set('id', node_id)
     # Fill out the actor_type attribute
     datad0 = ET.SubElement(node, 'data')
     datad0.set('key', 'd0')
@@ -103,8 +107,61 @@ def insert_contributor_node(data):
     datad2.set('key', 'd2')
     datad2.text = data[1]
 
+    # Finally, add the node to the graph
     graph.append(node)
-    print(ET.tostring(node, 'utf-8'))
+
+    # Return the node_id that was created
+    return node_id
+
+def insert_file_node(filename):
+    global graph
+
+    # Generate the contributor id
+    node_id = 'n' + str(generate_node_id())
+
+    # Build the XML tree
+    node = ET.Element('node')
+    node.set('id', node_id)
+
+    # Fill out the actor_type attribute
+    datad0 = ET.SubElement(node, 'data')
+    datad0.set('key', 'd0')
+    datad0.text = str(NodeActorType.FILE)
+
+    # Fill out the email attribute
+    datad1 = ET.SubElement(node, 'data')
+    datad1.set('key', 'd1')
+    datad1.text = ''
+
+    # Fill out the name attribute (for the contributor)
+    datad2 = ET.SubElement(node, 'data')
+    datad2.set('key', 'd2')
+    datad2.text = filename
+
+    # Finally, add the node to the graph
+    graph.append(node)
+
+    # Return the node_id that was created
+    return node_id
+
+def insert_commit_edge(contributor_id, file_id):
+    global graph
+
+    # Generate the contributor id
+    edge_id = 'e' + str(generate_edge_id())
+
+    # Build the XML tree
+    edge = ET.Element('edge')
+    edge.set('id', edge_id)
+    edge.set('source', contributor_id)
+    edge.set('target', file_id)
+
+    # Finally, add the node to the graph
+    graph.append(edge)
+
+    # Return the node_id that was created
+    return edge_id
+    
 
 def parse_entry(it):
     global line
@@ -119,12 +176,14 @@ def parse_entry(it):
 
     # Add the new contributor node to the list
     # only if it already is not there.
+    contributor_id = ''
     contributor_found = False
     for node_elem in graph.findall('node'):
         found_data_elem = node_elem.find('./data[@key=\'d1\']')
         if found_data_elem is not None:
             print(ET.tostring(found_data_elem, 'utf-8'))
             if found_data_elem.text == parts[0]:
+                contributor_id = node_elem.get('id')
                 contributor_found = True
                 break
         else:
@@ -135,7 +194,9 @@ def parse_entry(it):
     else:
         print('Contributor ' + parts[0] + ' not found')
         print('Inserting contributor node into graph...')
-        insert_contributor_node(parts)
+        contributor_id = insert_contributor_node(parts)
+
+    print('ContributorID: ' + contributor_id)
 
     # For each file, mark it.
     files = []
@@ -143,7 +204,34 @@ def parse_entry(it):
     while (line != '$'):
         if (line.strip() != ''):
             files.append(line)
-            print('>>> ' + line)
+
+            file_id = ''
+
+            # Add the new file node to the graph
+            # only if it already is not there.
+            filename_found = False
+            for node_elem in graph.findall('node'):
+                found_data_elem = node_elem.find('./data[@key=\'d2\']')
+                if found_data_elem is not None:
+                    print(ET.tostring(found_data_elem, 'utf-8'))
+                    if found_data_elem.text == line:
+                        file_id = node_elem.get('id')
+                        filename_found = True
+                        break
+                else:
+                    print('Could not find file...')
+
+            if filename_found:
+                print('Filename ' + line + ' already found')
+            else:
+                print('Filename ' + line + ' not found')
+                print('Inserting file node into graph...')
+                file_id = insert_file_node(line)
+            print('FileID: ' + file_id)
+
+            # Finally, insert the edge.
+            insert_commit_edge(contributor_id, file_id)
+
         try:
             next_line(it)
         except StopIteration:
@@ -151,6 +239,12 @@ def parse_entry(it):
             line = ''
             break
     print('files: ' + ','.join(files))
+
+
+
+
+
+
 
 
 with open('git-commit.log', 'r') as file:
