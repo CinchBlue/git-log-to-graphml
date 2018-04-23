@@ -8,8 +8,7 @@ root.set('xmlns',
         'http://graphml.graphdrawing.org/xmlns')
 root.set('xmlns:xsi',
         'http://www.w3.org/2001/XMLSchema-instance')
-root.set('xsi:schemaLocation',
-          'http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd')
+root.set('xsi:schemaLocation', 'http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd')
 
 # Setup the actor_type attribute for nodes
 keyd0 = ET.Element('key')
@@ -104,8 +103,8 @@ def insert_contributor_node(data):
     datad2.set('key', 'd2')
     datad2.text = data[1]
 
+    graph.append(node)
     print(ET.tostring(node, 'utf-8'))
-
 
 def parse_entry(it):
     global line
@@ -118,15 +117,18 @@ def parse_entry(it):
     print('parts: ' + ' | '.join(parts))
     next_line(it)
 
-    print(graph.findall('node'))
-
     # Add the new contributor node to the list
     # only if it already is not there.
     contributor_found = False
     for node_elem in graph.findall('node'):
-        if node_elem.findtext(parts[0]):
-            contributor_found = True
-            break
+        found_data_elem = node_elem.find('./data[@key=\'d1\']')
+        if found_data_elem is not None:
+            print(ET.tostring(found_data_elem, 'utf-8'))
+            if found_data_elem.text == parts[0]:
+                contributor_found = True
+                break
+        else:
+            print('Could not find data...')
 
     if contributor_found:
         print('Contributor ' + parts[0] + ' already found')
@@ -178,4 +180,8 @@ with open('git-commit.log', 'r') as file:
             break
     root.append(graph)
     print(ET.tostring(root, 'utf-8'))
+    tree = ET.ElementTree(root)
+    tree.write(
+            open('git-commit.graphml', 'w'),
+            encoding='utf-8')
 
