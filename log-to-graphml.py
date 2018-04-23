@@ -18,6 +18,11 @@ keyd0.set('for', 'node')
 keyd0.set('attr.name', 'actor_type')
 keyd0.set('attr.type', 'integer')
 
+# Enum-like class for the actor_type attribute
+class NodeActorType():
+    CONTRIBUTOR = 0
+    FILE = 1
+
 # Setup the label attribute for nodes
 keyd1 = ET.Element('key')
 keyd1.set('id', 'd1')
@@ -25,27 +30,17 @@ keyd1.set('for', 'node')
 keyd1.set('attr.name', 'email')
 keyd1.set('attr.type', 'string')
 
-# Setup the Git commit contributor name attribute
+# Setup the Git commit contributor name / filename
+# attribute
 keyd2 = ET.Element('key')
 keyd2.set('id', 'd2')
 keyd2.set('for', 'node')
-keyd2.set('attr.name', 'username')
-keyd2.set('attr.type', 'string')
+keyd2.set('attr.name', 'name')
 
-# Setup the filename attribute 
-keyd3 = ET.Element('key')
-keyd3.set('id', 'd3')
-keyd3.set('for', 'node')
-keyd3.set('attr.name', 'filename')
-keyd3.set('attr.type', 'string')
-
-
-# Put the two attribute subtrees on the XML
-# element tree
+# Put the attribute subtrees on the XML element tree
 root.append(keyd0)
 root.append(keyd1)
 root.append(keyd2)
-root.append(keyd3)
 
 # Prepare the graph subtree.
 # This will be appended to.
@@ -73,6 +68,45 @@ def next_line(it):
     global line
     line = it.next()
 
+def generate_node_id():
+    global node_id
+    temp = node_id
+    node_id = node_id + 1
+    return temp
+
+def generate_edge_id():
+    global edge_id
+    temp = edge_id
+    edge_id = edge_id + 1
+    return temp
+
+def insert_contributor_node(data):
+    global graph
+    # Get the email and username data
+    email = data[0]
+    username = data[1]
+
+    # Build the XML tree
+    node = ET.Element('node')
+    node.set('id', str(generate_node_id()))
+    # Fill out the actor_type attribute
+    datad0 = ET.SubElement(node, 'data')
+    datad0.set('key', 'd0')
+    datad0.text = str(NodeActorType.CONTRIBUTOR)
+
+    # Fill out the email attribute
+    datad1 = ET.SubElement(node, 'data')
+    datad1.set('key', 'd1')
+    datad1.text = data[0]
+
+    # Fill out the name attribute (for the contributor)
+    datad2 = ET.SubElement(node, 'data')
+    datad2.set('key', 'd2')
+    datad2.text = data[1]
+
+    print(ET.tostring(node, 'utf-8'))
+
+
 def parse_entry(it):
     global line
     global graph
@@ -88,11 +122,18 @@ def parse_entry(it):
 
     # Add the new contributor node to the list
     # only if it already is not there.
+    contributor_found = False
     for node_elem in graph.findall('node'):
         if node_elem.findtext(parts[0]):
-            print('FOUND: ' + parts[0])
-        else:
-            print('NOT FOUND: ' + parts[0])
+            contributor_found = True
+            break
+
+    if contributor_found:
+        print('Contributor ' + parts[0] + ' already found')
+    else:
+        print('Contributor ' + parts[0] + ' not found')
+        print('Inserting contributor node into graph...')
+        insert_contributor_node(parts)
 
     # For each file, mark it.
     files = []
