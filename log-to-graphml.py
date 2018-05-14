@@ -1,5 +1,6 @@
 import itertools, collections
 import xml.etree.cElementTree as ET
+import io
 
 # Setup the header XML element, including
 # the links to the schema
@@ -55,7 +56,7 @@ edge_id = 0
 
 #debug
 # Test XML capabilities
-print(ET.tostring(root, 'utf-8'))
+#print(ET.tostring(root, 'utf-8'))
 
 # A global line buffer to be used by the
 # parsing procedures.
@@ -181,22 +182,22 @@ def parse_entry(it):
     for node_elem in graph.findall('node'):
         found_data_elem = node_elem.find('./data[@key=\'d1\']')
         if found_data_elem is not None:
-            print(ET.tostring(found_data_elem, 'utf-8'))
+            #print(ET.tostring(found_data_elem, 'utf-8'))
             if found_data_elem.text == parts[0]:
                 contributor_id = node_elem.get('id')
                 contributor_found = True
                 break
-        else:
-            print('Could not find data...')
+        #else:
+        #    print('Could not find data...')
 
-    if contributor_found:
-        print('Contributor ' + parts[0] + ' already found')
-    else:
-        print('Contributor ' + parts[0] + ' not found')
-        print('Inserting contributor node into graph...')
+    if not contributor_found:
+    #    print('Contributor ' + parts[0] + ' not found')
+    #    print('Inserting contributor node into graph...')
         contributor_id = insert_contributor_node(parts)
+    #else:
+    #    print('Contributor ' + parts[0] + ' already found')
 
-    print('ContributorID: ' + contributor_id)
+    #print('ContributorID: ' + contributor_id)
 
     # For each file, mark it.
     files = []
@@ -213,21 +214,21 @@ def parse_entry(it):
             for node_elem in graph.findall('node'):
                 found_data_elem = node_elem.find('./data[@key=\'d2\']')
                 if found_data_elem is not None:
-                    print(ET.tostring(found_data_elem, 'utf-8'))
+                    #print(ET.tostring(found_data_elem, 'utf-8'))
                     if found_data_elem.text == line:
                         file_id = node_elem.get('id')
                         filename_found = True
                         break
-                else:
-                    print('Could not find file...')
+                #else:
+                #    print('Could not find file...')
 
-            if filename_found:
-                print('Filename ' + line + ' already found')
-            else:
-                print('Filename ' + line + ' not found')
-                print('Inserting file node into graph...')
+            if not filename_found:
+                #print('Filename ' + line + ' not found')
+                #print('Inserting file node into graph...')
                 file_id = insert_file_node(line)
-            print('FileID: ' + file_id)
+            #else:
+            #    print('Filename ' + line + ' already found')
+            #print('FileID: ' + file_id)
 
             # Finally, insert the edge.
             insert_commit_edge(contributor_id, file_id)
@@ -238,7 +239,7 @@ def parse_entry(it):
             print("End of file reached.")
             line = ''
             break
-    print('files: ' + ','.join(files))
+    #print('files: ' + ','.join(files))
 
 
 
@@ -247,14 +248,14 @@ def parse_entry(it):
 
 
 
-with open('git-commit.log', 'r') as file:
+with io.open('git-commit.log', 'r', encoding='utf-8') as file:
     # Get all the lines in the file
     lines = file.readlines()
     # Strip leading, trailing whitespace
     lines = [x.strip() for x in lines]
 
     #debug
-    print(lines)
+    #print(lines)
 
     # Get the iterator for the lines array
     it = iter(lines)
@@ -264,7 +265,7 @@ with open('git-commit.log', 'r') as file:
     while True:
         try:
             if (line == '$'):
-                print('NEW ENTRY:')
+                #print('NEW ENTRY:')
                 next_line(it)
                 parse_entry(it)
             else:
@@ -273,9 +274,10 @@ with open('git-commit.log', 'r') as file:
             print('Ended loop.')
             break
     root.append(graph)
-    print(ET.tostring(root, 'utf-8'))
+    #print(ET.tostring(root, 'utf-8'))
     tree = ET.ElementTree(root)
     tree.write(
             open('git-commit.graphml', 'w'),
             encoding='utf-8')
+    print('Finished writing output to git-commit.graphml')
 
